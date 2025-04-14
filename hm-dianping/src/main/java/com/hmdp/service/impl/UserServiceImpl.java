@@ -9,9 +9,12 @@ import com.hmdp.mapper.UserMapper;
 import com.hmdp.service.IUserService;
 import com.hmdp.utils.RegexUtils;
 import com.hmdp.utils.SystemConstants;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpSession;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -24,6 +27,11 @@ import javax.servlet.http.HttpSession;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
 
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+
     @Override
     public Result sendCode(String phone, HttpSession session) {
         //第一步校验手机号
@@ -34,8 +42,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         //符合，生成验证码
         String code = RandomUtil.randomNumbers(6);
 
-        //保存验证码到session
-        session.setAttribute("code", code);
+        //保存验证码到session  -》 redis中
+//        session.setAttribute("code", code);
+        redisTemplate.opsForValue().set("login:code:" + phone, code, 2, TimeUnit.MINUTES);
+
 
         //发送验证码  通过第三方平台实现
         log.debug("发送短信验证码成功,验证码:" + code);
