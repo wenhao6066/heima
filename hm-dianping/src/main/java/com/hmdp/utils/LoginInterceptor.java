@@ -1,13 +1,16 @@
 package com.hmdp.utils;
 
-import com.hmdp.dto.UserDTO;
+import cn.hutool.core.bean.BeanUtil;
 import com.hmdp.entity.User;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author haowe
@@ -19,14 +22,13 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        //1.获取session
-        HttpSession session = request.getSession();
-        Object user = session.getAttribute("user");
-        if (Objects.isNull(user)) {
-            response.setStatus(401);
+        //判断是否需要拦截
+        if(Objects.isNull(UserHolder.getUser())){
+            //代表没有 需要拦截
+            response.setStatus(404);
             return false;
         }
-        UserHolder.saveUser((User) user);//保存到当前线程里面
+        //有用户则放行
         return true;
     }
 
