@@ -71,7 +71,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             boolean isLock = tryLock(RedisConstants.LOCK_SHOP_KEY + id);
             if (!isLock) {
                 Thread.sleep(50);
-                return queryWithMutex(id);//继续循环
+                //继续循环
+                return queryWithMutex(id);
             }
 
             //模拟延迟
