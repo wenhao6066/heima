@@ -10,6 +10,7 @@ import com.hmdp.service.IVoucherOrderService;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,8 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Resource
     private RedisIdWorker redisIdWorker;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public Result seckillVoucher(Long voucherId) {
@@ -60,9 +63,24 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         Long userId = UserHolder.getUser().getId();
         //此时事务不存在，因为调用的不是Spring管理返回的代理对象，此时需要调用Spring管理的代理对象
         //此时这样调用的service才会具有事务
-        synchronized (userId.toString().intern()) {
+//        synchronized (userId.toString().intern()) {
+//            IVoucherOrderService voucherOrderService = (IVoucherOrderService) AopContext.currentProxy();
+//            return voucherOrderService.createOrder(voucherId);
+//        }
+        SimpleRedisLock lock = new SimpleRedisLock("order::" + userId, stringRedisTemplate);
+        boolean isLock = lock.tryLock(10);
+        //判断是否获取锁成功
+        //反向来写最好，最好不要写嵌套
+        if (!isLock) {
+            //获取失败
+            return Result.fail("一个人只能下一单");
+        }
+        //说明获取锁成功了
+        try {
             IVoucherOrderService voucherOrderService = (IVoucherOrderService) AopContext.currentProxy();
             return voucherOrderService.createOrder(voucherId);
+        } finally {
+            lock.unlock();
         }
     }
 
