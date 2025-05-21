@@ -14,7 +14,7 @@ public class RedisConfig {
     @Bean
     public RedissonClient redissonClient() {
         Config config = new Config();
-        config.useSingleServer().setAddress("redis://hadoop:6379").setPassword("123456");
+        config.useSingleServer().setAddress("redis://hadoop102:6379").setPassword("123456");
         return Redisson.create(config);
     }
 }
